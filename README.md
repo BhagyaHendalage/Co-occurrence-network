@@ -1,29 +1,16 @@
 # Co-occurrence-network
 Cooccurrence networks of 
-- rhizosphere fungal communities and
-- phyllosphere fungal communities
+- Rhizosphere fungal communities and
+- Phyllosphere fungal communities
 
 were constructed and compared for 
 
-- asymptomatic samples and
-- symptomatic samples
+- Healthy samples and
+- Disease samples
 
 with the NetCoMi package (network construction and comparison for microbiome data) (version 1.1.0) in R version 4.2.0 using the taxonomic profiles at generic level (Peschel et al. 2021).
-
-Covariates from field was confounded in the network analysis because of the limitation of each covariate for plant sampling. 
-
-To simplify the networks, with the top 100 most frequent ASVs were used. 
-
-Correlation network analysis was computed with the Sparse Correlations for Compositional (SparCC) method. 
-
-Eigenvector centrality was used for scaling node size and picking hub or keystone taxa. 
-
-Cluster patterns were detected by the 'cluster_fast greedy' algorithm (Clauset et al. 2004) and nodes with the same colors indicated that they were from the same cluster. 
-
-Networks were compared using 1,000 permutations to estimate statistical differences and the P values were adjusted with Benjamini-Hochberg correction (Benjamini and Hochberg 2000). 
-
-Similarities in community structure or clustering between networks were measured using the adjusted Rand index (ARI) and the Jaccard index (Gates et al. 2019).
-
+```
+#install the package
 devtools::install_github("GraceYoon/SPRING",force = T)
 devtools::install_github("GraceYoon/SPRING")
 
@@ -31,7 +18,8 @@ devtools::install_github("stefpeschel/NetCoMi",
                          dependencies = c("Depends", "Imports", "LinkingTo"),
                          repos = c("https://cloud.r-project.org/",
                                    BiocManager::repositories()))
-
+```
+```
 # Loading required packages
 library(BiocManager)
 library(WGCNA)
@@ -45,12 +33,24 @@ library(qiime2R)
 library(tidyverse)
 library(microbiome)
 
+#set the working directory for phyllosphere data set
 setwd("C:/Users/User/OneDrive/Desktop/Taiwan/Phyllosphere")
 
+#read the files
 otu_mat<- read_excel("Phyllosphere_fungi.xlsx", sheet = "OTU matrix")
 tax_mat<- read_excel("Phyllosphere_fungi.xlsx", sheet = "Taxonomy table")
 samples_df <- read_excel("Phyllosphere_fungi.xlsx", sheet = "Samples")
 
+
+#set the working directory for Rhizosphere data set
+setwd("C:/Users/User/OneDrive/Desktop/Taiwan/Rhizosphere")
+
+#read the files
+otu_mat<- read_excel("Rhizosphere_fungi.xlsx", sheet = "OTU matrix")
+tax_mat<- read_excel("Rhizosphere_fungi.xlsx", sheet = "Taxonomy table")
+samples_df <- read_excel("Rhizosphere_fungi.xlsx", sheet = "Samples")
+```
+```
 otu_mat <- otu_mat %>%
   tibble::column_to_rownames("otu") 
 
@@ -76,7 +76,10 @@ complete_agg <- tax_glom(physeq201, 'Genus')
 tax_table(complete_agg)
 complete_agg <- aggregate_taxa(complete_agg, 'Genus')
 complete_agg
+```
 
+Covariates from field was confounded in the network analysis because of the limitation of each covariate for plant sampling. 
+```
 # keep only taxa that were ....................................................
 minTotRelAbun <- 5e-5
 sums <- taxa_sums(complete_agg)
@@ -86,13 +89,15 @@ keepTaxa <- taxa_names(complete_agg)[which((sums / sum(sums)) > minTotRelAbun)]
 filt_complete_agg <- prune_taxa(keepTaxa, complete_agg)
 filt_complete_agg
 
-
-
+```
+To simplify the networks, with the top 100 most frequent ASVs were used. 
+```
 # select data of condition.
 Healthy_physeq <- subset_samples(filt_complete_agg, Condition =="Healthy")
 Disease_physeq <- subset_samples(filt_complete_agg, Condition =="Diseased")
 
 # Saving the phyloseq objects for updated plant condition
+#create folders for saving the files
 saveRDS(Healthy_physeq, "condition/Healthy.rds")
 saveRDS(Disease_physeq, "condition/Disease.rds")
 
@@ -121,6 +126,9 @@ data %>%
   summarise(Abundance = mean(Abundance)) %>%
   arrange(-Abundance)
 
+```
+Correlation network analysis was computed with the Sparse Correlations for Compositional (SparCC) method. 
+```
 #SparCC
 net_single_Healthy <- netConstruct(Healthy_data,
                                    verbose = 3,
@@ -136,7 +144,9 @@ net_single_Healthy <- netConstruct(Healthy_data,
                                    seed = 123456)
 
 saveRDS(net_single_Healthy, "condition/Healthy_condition/Healthy_Sparcc network.rds")
-
+```
+Eigenvector centrality was used for scaling node size and picking hub or keystone taxa. Cluster patterns were detected by the 'cluster_fast greedy' algorithm (Clauset et al. 2004) and nodes with the same colors indicated that they were from the same cluster. Networks were compared using 1,000 permutations to estimate statistical differences and the P values were adjusted with Benjamini-Hochberg correction (Benjamini and Hochberg 2000). Similarities in community structure or clustering between networks were measured using the adjusted Rand index (ARI) and the Jaccard index (Gates et al. 2019).
+```
 props_single_Healthy <- netAnalyze(net_single_Healthy, 
                                    clustMethod = "cluster_fast_greedy",
                                    hubPar = "eigenvector", 
@@ -398,3 +408,4 @@ plot(props_condition,
      groupNames = c("Healthy", "Disease"), 
      showTitle = TRUE,
      cexTitle = 1.5)
+```
